@@ -6,7 +6,7 @@ import json
 # -------------------
 # Configuration
 # -------------------
-SOURCE_DIR = r"C:\Working Files\ALAN PRODUCTION\2025\Production of Space Twitch Stream Finder\vids"  # Change this to where your .mp4 files live
+SOURCE_DIR = r"C:\Path\to\your\files"  # Change this to where your .mp4 files live
 TARGET_LOUDNESS = -16.0
 TARGET_LRA = 11.0
 TARGET_TP = -1.5
