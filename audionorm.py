@@ -6,13 +6,11 @@ import json
 # -------------------
 # Configuration
 # -------------------
-SOURCE_DIR = r"C:\Path\to\your\files"  # Change this to where your .mp4 files live
+SOURCE_DIR = r"C:\Path\to\your\files"  # folder with .mp4 files
 TARGET_LOUDNESS = -16.0
 TARGET_LRA = 11.0
 TARGET_TP = -1.5
 
-# Where to place normalized files
-# (You can set it to SOURCE_DIR if you want them in the same folder, but be aware of overwriting)
 OUTPUT_DIR = os.path.join(SOURCE_DIR, "normalized")
 os.makedirs(OUTPUT_DIR, exist_ok=True)
 
@@ -22,36 +20,32 @@ def normalize_file(input_path):
      1) Analyze loudness (first pass)
      2) Use measured values to normalize audio (second pass)
     """
-
     filename = os.path.basename(input_path)
     name, ext = os.path.splitext(filename)
 
-    # 1) Loudness analysis (pass 1)
-    #    We use `-f null -` to avoid writing an output; the stats are printed in stderr as JSON.
-    analysis_filter = f"loudnorm=I={TARGET_LOUDNESS}:LRA={TARGET_LRA}:TP={TARGET_TP}:print_format=json"
+    # --------------------------------------------------
+    # PASS 1: Loudness analysis (no output file produced)
+    # --------------------------------------------------
+    analysis_filter = (
+        f"loudnorm=I={TARGET_LOUDNESS}:LRA={TARGET_LRA}:TP={TARGET_TP}:print_format=json"
+    )
     cmd_analysis = [
         "ffmpeg",
-        "-y",               # overwrite output
+        "-y",
         "-i", input_path,
         "-af", analysis_filter,
         "-f", "null",
-        "-"                 # Send output to null
+        "-"  # sends processed output to null
     ]
 
-    print(f"Analyzing loudness for: {filename}")
+    print(f"\nAnalyzing loudness for: {filename}")
     result = subprocess.run(cmd_analysis, capture_output=True, text=True)
     stderr_output = result.stderr
 
-    # Extract the JSON block from FFmpeg's stderr (the loudnorm stats appear at the very end).
-    # They typically appear in the form:
-    # {
-    #     "input_i" : "-19.5",
-    #     "input_tp" : "-4.2",
-    #     ...
-    # }
+    # Look for the JSON block from loudnorm in stderr output
     json_start = stderr_output.find("{")
     json_end = stderr_output.rfind("}") + 1
-    if json_start == -1 or json_end == -1:
+    if json_start == -1 or json_end == 0:
         print(f"Could not find JSON in FFmpeg output for file: {filename}")
         return
 
@@ -68,11 +62,12 @@ def normalize_file(input_path):
     measured_thresh = data["input_thresh"]
     offset = data["target_offset"]
 
-    print(f"  Measured values: I={measured_I}, LRA={measured_LRA}, TP={measured_tp}, OFFSET={offset}")
+    print(f"  Measured I={measured_I}, LRA={measured_LRA}, TP={measured_tp}, OFFSET={offset}")
 
-    # 2) Normalize using the measured values (pass 2)
-    #    We provide them back to loudnorm for a more accurate second pass.
-    #    linear=true ensures a linear gain across the entire file (rather than dynamic).
+    # --------------------------------------------------
+    # PASS 2: Use measured values to normalize the audio
+    # --------------------------------------------------
+    # This is where we add the -map directives and specify -c:v copy, -c:a aac
     loudnorm_filter_pass2 = (
         f"loudnorm=I={TARGET_LOUDNESS}:LRA={TARGET_LRA}:TP={TARGET_TP}"
         f":measured_I={measured_I}:measured_LRA={measured_LRA}:measured_tp={measured_tp}"
@@ -80,13 +75,22 @@ def normalize_file(input_path):
         f":linear=true:print_format=summary"
     )
 
-    # Construct output path
     output_path = os.path.join(OUTPUT_DIR, f"{name}_normalized{ext}")
     cmd_normalize = [
         "ffmpeg",
-        "-y",                 # overwrite if file exists
+        "-y",
         "-i", input_path,
-        "-c:v", "copy",       # copy video without re-encoding
+        #
+        # Here's where the main updates are:
+        # * Explicitly map the first video track (-map 0:v:0)
+        # * Explicitly map the first audio track (-map 0:a:0)
+        # * Copy video as-is (-c:v copy)
+        # * Re-encode audio to AAC (-c:a aac)
+        #
+        "-map", "0:v:0",
+        "-map", "0:a:0",
+        "-c:v", "copy",
+        "-c:a", "aac",
         "-af", loudnorm_filter_pass2,
         output_path
     ]
@@ -95,7 +99,6 @@ def normalize_file(input_path):
     subprocess.run(cmd_normalize)
 
 def main():
-    # Find all MP4 files in SOURCE_DIR
     mp4_files = glob.glob(os.path.join(SOURCE_DIR, "*.mp4"))
     if not mp4_files:
         print(f"No .mp4 files found in {SOURCE_DIR}")
