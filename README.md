@@ -46,7 +46,6 @@ The resulting files have more consistent perceived volume and adhere to EBU R128
 
 # Configuration
 
-```python
 # -------------------
 # Configuration
 # -------------------
@@ -81,7 +80,7 @@ If you want to overwrite the source files or use a different path, change `OUTPU
 3. **Second Pass (Apply)**  
    The script feeds the measured values back into the `loudnorm` filter for accurate gain adjustment, copying the video stream (`-c:v copy`) to avoid re-encoding.
 
-## Troubleshooting
+# Troubleshooting
 
 - **Could not find JSON in FFmpeg output**  
   - Ensure FFmpeg is up to date.
@@ -93,12 +92,3 @@ If you want to overwrite the source files or use a different path, change `OUTPU
 - **Permission Errors**  
   - Run the script with proper permissions.
   - Check read/write access to `SOURCE_DIR`.
-
-## License
-
-This script is provided “as-is” under the **MIT License** (or specify another license if needed). Use at your own risk.
-
-## References
-
-- [FFmpeg loudnorm Filter Docs](https://ffmpeg.org/ffmpeg-all.html#loudnorm)
-- [EBU R128 Loudness Standard](https://tech.ebu.ch/docs/r/r128.pdf)
