@@ -49,10 +49,10 @@ The resulting files have more consistent perceived volume and adhere to EBU R128
 # -------------------
 # Configuration
 # -------------------
-SOURCE_DIR = r"C:\Path\to\your\files"
-TARGET_LOUDNESS = -16.0
-TARGET_LRA = 11.0
-TARGET_TP = -1.5
+- SOURCE_DIR = r"C:\Path\to\your\files"
+- TARGET_LOUDNESS = -16.0
+- TARGET_LRA = 11.0
+- TARGET_TP = -1.5
 - **`SOURCE_DIR`**: Path to your folder of `.mp4` files.  
 - **`TARGET_LOUDNESS (I)`**: Integrated loudness target in LUFS (commonly between -23 and -14).  
 - **`TARGET_LRA`**: Loudness Range limit in LU.  
